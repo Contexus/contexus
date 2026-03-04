@@ -27,19 +27,19 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL environment variable is required for Drizzle configuration');
 }
 
-// Validate DATABASE_URL format and extract components for consistency
-const urlRegex = /^postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/;
+// Validate DATABASE_URL format - handle optional port and query params
+const urlRegex = /^postgresql:\/\/([^:]+):([^@]+)@([^:/]+)(?::(\d+))?\/([^?]+)(\?.*)?$/;
 const urlMatch = databaseUrl.match(urlRegex);
 
 if (!urlMatch) {
-  throw new Error(`Invalid DATABASE_URL format. Expected: postgresql://user:password@host:port/database`);
+  throw new Error(`Invalid DATABASE_URL format. Expected: postgresql://user:password@host[:port]/database[?params]`);
 }
 
-const [, user, password, host, port, database] = urlMatch;
+const [, user, , host, port, database] = urlMatch;
 
-console.log(`🔍 Drizzle configuration validated for connection consistency:`);
+console.log(`🔍 Drizzle configuration validated:`);
 console.log(`   Host: ${host}`);
-console.log(`   Port: ${port}`);
+console.log(`   Port: ${port || '5432 (default)'}`);
 console.log(`   User: ${user}`);
 console.log(`   Database: ${database}`);
 console.log(`   URL: ${databaseUrl.replace(/:[^:@]*@/, ':***@')}`);
