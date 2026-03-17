@@ -180,6 +180,8 @@ docker-compose logs -f contexus
 # Scale services
 docker-compose up -d --scale contexus=3
 ```
+### Docker Image
+https://hub.docker.com/r/contexusio/contexus
 
 ### Docker Initialization Flow
 
@@ -334,41 +336,6 @@ POST   /api/node-red/flows       - Deploy flow
 - **Build:** Vite (frontend) + ESBuild (backend)
 - **State Management:** TanStack Query + React Context
 - **Testing:** Vitest with comprehensive test coverage
-
-### Project Structure
-```
-├── server/                 # Backend application
-│   ├── auth/              # Authentication & authorization
-│   ├── database/          # Database connection factory
-│   ├── routes/            # API route handlers
-│   ├── services/          # Business logic services
-│   ├── storage/           # Database abstraction layers
-│   ├── middleware/        # Express middleware
-│   ├── utils/             # Utility functions
-│   ├── chirpstack-webhook-handler.ts  # LoRaWAN integration
-│   ├── node-red-runtime.ts # Node-RED integration
-│   └── index.ts           # Application entry point
-├── client/                # Frontend React application
-│   ├── src/
-│   │   ├── components/    # React components (Radix UI + shadcn/ui)
-│   │   ├── pages/         # Page components
-│   │   ├── hooks/         # Custom React hooks
-│   │   └── lib/           # Frontend utilities
-├── shared/                # Shared types and schemas
-│   └── unified-schema.ts  # Complete PostgreSQL schema (40 tables)
-├── test/                  # Test suites (Vitest)
-│   ├── unit/              # Unit tests
-│   ├── integration/       # Integration tests
-│   └── e2e/               # End-to-end tests
-├── docs/                  # Documentation
-│   ├── DATABASE-DOCKER-DEPLOYMENT.md  # Docker deployment guide
-│   └── CHIRPSTACK_WEBHOOK_INTEGRATION.md  # ChirpStack setup
-├── init-multiple-databases.sh  # PostgreSQL init script
-├── start.sh               # Application startup script
-├── manual-schema.sql      # Backup SQL schema
-├── docker-compose.yml     # Container orchestration
-└── drizzle.config.ts      # Drizzle ORM configuration
-```
 
 ### Database Schema (40 Tables)
 
