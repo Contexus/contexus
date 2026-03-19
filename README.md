@@ -507,6 +507,103 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] WebRTC video streaming
 - [ ] Blockchain integration for device identity
 
+# ChirpStack Auto-Integration: Seamless LoRaWAN Device Onboarding
+
+## Overview
+
+Our **ChirpStack Auto-Integration** feature eliminates the complexity of connecting LoRaWAN devices to your IoT platform. Devices appear automatically in your dashboard as soon as they transmit their first data packet—no manual configuration required.
+
+---
+
+## Summary
+
+> *"Simply power on your LoRaWAN devices, and they appear in your dashboard. That's it. No spreadsheets, no bulk imports, no manual configuration—just seamless, automated device onboarding."*
+
+---
+
+## How It Works
+
+### 1. Automatic Application Discovery
+- Every 5 minutes, the system scans your ChirpStack server for new applications
+- Creates corresponding "drivers" in contexus automatically
+- Works with both single-network and multi-tenant ChirpStack deployments
+
+### 2. Zero-Touch Device Registration
+- Devices are **not** pre-imported or manually added
+- When a device sends its first uplink message, the webhook instantly creates it in your workspace
+- Devices are automatically linked to the correct driver and workspace
+
+### 3. Smart Webhook Configuration
+- Webhooks are automatically configured in ChirpStack during sync
+- Each application gets its own dedicated webhook endpoint
+- URLs follow the pattern: `https://openiot.contexus.io/api/chirpstack/webhook/{driverId}`
+
+---
+
+## Key Benefits
+
+| Benefit | What It Means |
+|---------|---------------|
+| **Zero Manual Setup** | No need to manually add each device—just power it on |
+| **Instant Visibility** | Devices appear immediately upon first transmission |
+| **Scalable** | Deploy thousands of devices without administrative overhead |
+| **Organized** | Devices automatically grouped by ChirpStack application |
+| **Secure** | Each workspace only sees its own devices |
+| **Self-Healing** | Re-sync corrects webhook configurations automatically |
+
+---
+
+## Multi-Region Support
+
+The platform supports **10+ LoRaWAN regions** with dedicated gateway bridges, including:
+- EU868, AS923, AU915, CN470, IN865, US915, and more
+
+Each region has optimized UDP/BasicsStation ports and MQTT topic routing for reliable message delivery.
+
+---
+
+## Use Cases
+
+### Smart Cities
+Deploy thousands of sensors city-wide without manual device registration. Streetlights, parking sensors, waste management, and environmental monitors—all discovered and onboarded automatically.
+
+### Industrial IoT
+Plug-and-play sensor deployment in factories and warehouses. Temperature, humidity, vibration, and other sensors appear in your dashboard the moment they're powered on.
+
+### Agriculture
+Scale LoRaWAN sensor networks across large farms automatically. Soil moisture, weather stations, and livestock tracking devices integrate without manual configuration.
+
+### Building Management
+Add devices to new floors or buildings without IT overhead. Occupancy sensors, energy monitors, and HVAC controls are discovered as soon as they're installed.
+
+---
+
+## Technical Highlights
+
+- **5-minute sync cycle** to detect new applications automatically
+- **Lenient webhook validation** for maximum compatibility with different ChirpStack versions
+- **PostgreSQL-backed sync logs** for full auditability and troubleshooting
+- **Graceful error handling** with detailed logging for operational visibility
+- **Multi-tenant architecture** supporting both single-organization and service provider deployments
+
+---
+
+## Architecture
+
+```
+┌─────────────────┐     5-min scan      ┌──────────────────┐
+│   ChirpStack    │ ◄─────────────────► │  Contexus Auto   │
+│   Applications  │                      │  Integration     │
+└─────────────────┘                      └────────┬─────────┘
+                                                  │
+                                                  │ Creates Drivers
+                                                  ▼
+┌─────────────────┐    webhook configured ┌──────────────┐
+│   LoRaWAN       │ ◄─────────────────────│   Contexus   │
+│   Device        │     (on first uplink)  │   Dashboard  │
+└─────────────────┘                       └──────────────┘
+```
+
 ---
 
 **Built with ❤️ by the contexus Team**
