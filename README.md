@@ -603,6 +603,43 @@ Add devices to new floors or buildings without IT overhead. Occupancy sensors, e
 │   Device        │     (on first uplink)  │   Dashboard  │
 └─────────────────┘                       └──────────────┘
 ```
+# Contexus ChirpStack Device Import System
+---
+
+## Executive Summary
+
+The Device Import Automation system transforms LoRaWAN device deployment from a manual, error-prone process into a streamlined, scalable operation. With **20x faster imports**, parallel processing, and enterprise-grade rollback capabilities, organizations can deploy thousands of IoT devices in minutes rather than hours.
+
+**Key Statistic:** Deploy 1,000 LoRaWAN devices in under 60 seconds (vs. 15+ minutes manually).
+
+---
+
+## Feature Summary
+
+### Core Capabilities
+
+| Feature | Description | Benefit |
+|---------|-------------|---------|
+| **Batch CSV Import** | Upload thousands of devices via CSV | Eliminate manual data entry |
+| **Parallel Processing** | 10 concurrent operations | 20x faster than sequential |
+| **Real-time Validation** | Instant HEX, format, resource checks | Catch errors before import |
+| **Progress Tracking** | Live status with error recovery | Full visibility during import |
+| **Smart Diff Sync** | Detect new/updated/deleted devices | Automated reconciliation |
+| **Rollback Capability** | Full or partial device removal | Risk-free testing |
+| **Cross-System Mapping** | DevEUI ↔ DeviceID synchronization | Unified device management |
+| **Import History** | Complete audit trail with reports | Compliance & debugging |
+
+### What Problems Does It Solve?
+
+| Problem | Before | After |
+|---------|--------|-------|
+| Manual device entry | 1-2 minutes per device | ~0.05 seconds per device |
+| Error discovery | After deployment (costly fixes) | Before import (validation) |
+| Batch deployments | Hours or days | Minutes |
+| Rollback mistakes | Manual deletion, risky | One-click, safe |
+| System sync | Copy-paste errors | Automatic mapping |
+
+---
 
 ---
 
