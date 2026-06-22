@@ -127,35 +127,7 @@ LOG_FORMAT=json
 # Note: PostgreSQL now stores all data (configuration + time-series) in unified schema
 ```
 
-### 3. Install Dependencies
-
-```bash
-npm install
-```
-
-### 4. Database Setup
-
-```bash
-# Push database schema
-npm run db:push
-
-# Or with Docker Compose
-docker-compose up postgres redis -d
-```
-
-### 5. Development Server
-
-```bash
-# Start development server
-npm run dev
-
-# Access the platform
-open http://localhost:15000
-```
-
-**Note:** Default port is 15000 (not 5000)
-
-### 6. Default Login
+### 3. Default Login
 
 - **Username:** `iotadmin` Value from `ADMIN_USERNAME` environment variable
 - **Password:** 'admin123' Value from `ADMIN_PASSWORD` environment variable
