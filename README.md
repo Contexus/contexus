@@ -129,9 +129,9 @@ LOG_FORMAT=json
 
 ### 3. Default Login
 
-- **Username:** `iotadmin` Value from `ADMIN_USERNAME` environment variable
-- **Password:** 'admin123' Value from `ADMIN_PASSWORD` environment variable
-- **ADMIN_EMAIL** 'contact@contexus.io' Value from 'ADMIN_EMAIL' environment variable
+- **Username:** `iotevadmin` (app default) , can customize Value from `ADMIN_USERNAME` .env environment variable
+- **Password:** Value from `ADMIN_PASSWORD` .env environment variable
+- **ADMIN_EMAIL** 'contact@contexus.io'  (app default), can customize Value from 'ADMIN_EMAIL' .env environment variable
 - **Change immediately after first login**
 
 ## 🐳 Docker Deployment
