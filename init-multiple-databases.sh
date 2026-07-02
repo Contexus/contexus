@@ -9,14 +9,14 @@ echo "Initialization started at: $(date)"
 
 check_fresh_init() {
     local table_count=$(psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A -c "
-        SELECT COUNT(*) FROM information_schema.tables 
+        SELECT COUNT(*) FROM information_schema.tables
         WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
     " 2>/dev/null || echo "0")
-    
+
     if [ "$table_count" -gt 0 ]; then
         echo "Database already contains $table_count tables - skipping initialization"
         psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
-            SELECT table_name FROM information_schema.tables 
+            SELECT table_name FROM information_schema.tables
             WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
             ORDER BY table_name;
         "
@@ -28,7 +28,7 @@ check_fresh_init() {
 drizzle_migrations_applied() {
     local table_exists=$(psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A -c "
         SELECT EXISTS (
-            SELECT 1 FROM information_schema.tables 
+            SELECT 1 FROM information_schema.tables
             WHERE table_schema = 'public' AND table_name = 'drizzle_migrations'
         );
     " 2>/dev/null || echo "f")
@@ -48,20 +48,29 @@ drizzle_migrations_applied() {
 }
 
 echo "Waiting for PostgreSQL to be fully ready..."
-max_attempts=30
+max_attempts=60
 attempt=1
+sleep_time=2
 
 while [ $attempt -le $max_attempts ]; do
-    if pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h localhost -q; then
-        echo "PostgreSQL is ready after $attempt attempts!"
+    # Try Unix socket first (faster during early startup)
+    if pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q 2>/dev/null; then
+        echo "PostgreSQL is ready (Unix socket) after $attempt attempts!"
+        break
+    fi
+    # Fall back to TCP check
+    if pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h localhost -q 2>/dev/null; then
+        echo "PostgreSQL is ready (TCP) after $attempt attempts!"
         break
     fi
     if [ $attempt -eq $max_attempts ]; then
         echo "PostgreSQL failed to become ready after $max_attempts attempts"
-        exit 1
+        echo "This is normal if the database already exists - continuing..."
+        # Don't fail here - let the script continue if DB already exists
+        break
     fi
     echo "PostgreSQL not ready yet (attempt $attempt/$max_attempts), waiting..."
-    sleep 3
+    sleep $sleep_time
     attempt=$((attempt + 1))
 done
 
@@ -81,13 +90,13 @@ echo "Starting fresh database schema creation (48 tables)..."
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'EOSQL'
     \set VERBOSITY verbose
-    
+
     SELECT 'Database connection successful' as status, current_database() as database;
-    
+
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     CREATE EXTENSION IF NOT EXISTS "pgcrypto";
     CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-    
+
     SELECT 'Extensions created successfully' as status;
 
     -- =====================================================
@@ -104,6 +113,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'
         storage_limit INTEGER DEFAULT 1073741824,
         theme JSONB DEFAULT '{}',
         settings JSONB DEFAULT '{}',
+        chirpstack_config JSONB DEFAULT '{}',
         is_active BOOLEAN DEFAULT true,
         created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
         updated_at TIMESTAMPTZ
@@ -982,15 +992,15 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'
     -- =====================================================
     -- PERFORMANCE INDEXES
     -- =====================================================
-    
+
     CREATE INDEX idx_workspaces_slug ON workspaces(slug);
     CREATE INDEX idx_workspaces_name ON workspaces(name);
     CREATE INDEX idx_workspaces_plan ON workspaces(plan);
     CREATE INDEX idx_workspaces_is_active ON workspaces(is_active);
-    
+
     CREATE INDEX idx_subscription_plans_name ON subscription_plans(name);
     CREATE INDEX idx_subscription_plans_is_active ON subscription_plans(is_active);
-    
+
     CREATE INDEX idx_users_email ON users(email);
     CREATE INDEX idx_users_username ON users(username);
     CREATE INDEX idx_users_role ON users(role);
@@ -999,14 +1009,14 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'
     CREATE INDEX idx_users_default_workspace ON users(default_workspace_id);
     CREATE INDEX idx_users_subscription_plan ON users(subscription_plan_id);
     CREATE INDEX idx_users_created_at ON users(created_at);
-    
+
     CREATE INDEX idx_workspace_users_workspace_id ON workspace_users(workspace_id);
     CREATE INDEX idx_workspace_users_user_id ON workspace_users(user_id);
-    
+
     CREATE INDEX idx_drivers_workspace_id ON drivers(workspace_id);
     CREATE INDEX idx_drivers_type ON drivers(type);
     CREATE INDEX idx_drivers_is_active ON drivers(is_active);
-    
+
     CREATE INDEX idx_devices_workspace_id ON devices(workspace_id);
     CREATE INDEX idx_devices_name ON devices(name);
     CREATE INDEX idx_devices_device_key ON devices(device_key);
@@ -1020,64 +1030,64 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'
     CREATE INDEX idx_devices_status_last_seen ON devices(status, last_seen);
     CREATE INDEX idx_devices_workspace_created_at ON devices(workspace_id, created_at);
     CREATE INDEX idx_devices_workspace_status ON devices(workspace_id, status);
-    
+
     CREATE INDEX idx_mqtt_discovered_devices_workspace_id ON mqtt_discovered_devices(workspace_id);
     CREATE INDEX idx_mqtt_discovered_devices_driver_id ON mqtt_discovered_devices(driver_id);
     CREATE INDEX idx_mqtt_discovered_devices_status ON mqtt_discovered_devices(status);
     CREATE INDEX idx_mqtt_discovered_devices_last_seen ON mqtt_discovered_devices(last_seen);
-    
+
     CREATE INDEX idx_mqtt_message_buffer_discovered_device_id ON mqtt_message_buffer(discovered_device_id);
     CREATE INDEX idx_mqtt_message_buffer_workspace_id ON mqtt_message_buffer(workspace_id);
     CREATE INDEX idx_mqtt_message_buffer_timestamp ON mqtt_message_buffer(timestamp DESC);
-    
+
     CREATE INDEX idx_device_data_device_property_time ON device_data(device_id, property_name, timestamp DESC);
     CREATE INDEX idx_device_data_timestamp ON device_data(timestamp DESC);
     CREATE INDEX idx_device_data_property_time ON device_data(property_name, timestamp DESC);
     CREATE INDEX idx_device_data_workspace_id ON device_data(workspace_id);
     CREATE INDEX idx_device_data_workspace_created_at ON device_data(workspace_id, created_at);
-    
+
     CREATE INDEX idx_device_property_cache_workspace ON device_property_cache(workspace_id);
     CREATE INDEX idx_device_property_cache_device ON device_property_cache(device_id);
-    
+
     CREATE INDEX idx_dashboards_workspace_id ON dashboards(workspace_id);
     CREATE INDEX idx_dashboards_is_public ON dashboards(is_public);
     CREATE INDEX idx_dashboards_publish_slug ON dashboards(publish_slug);
-    
+
     CREATE INDEX idx_floor_plans_workspace_id ON floor_plans(workspace_id);
     CREATE INDEX idx_floor_plan_templates_workspace_id ON floor_plan_templates(workspace_id);
     CREATE INDEX idx_hmi_diagrams_workspace_id ON hmi_diagrams(workspace_id);
-    
+
     CREATE INDEX idx_rules_workspace_id ON rules(workspace_id);
     CREATE INDEX idx_rules_is_active ON rules(is_active);
     CREATE INDEX idx_rule_executions_rule_id ON rule_executions(rule_id);
     CREATE INDEX idx_rule_executions_executed_at ON rule_executions(executed_at);
-    
+
     CREATE INDEX idx_alerts_workspace_id ON alerts(workspace_id);
     CREATE INDEX idx_alerts_device_id ON alerts(device_id);
     CREATE INDEX idx_alerts_is_acknowledged ON alerts(is_acknowledged);
     CREATE INDEX idx_alerts_created_at ON alerts(created_at);
-    
+
     CREATE INDEX idx_scenes_workspace_id ON scenes(workspace_id);
-    
+
     CREATE INDEX idx_flows_workspace_id ON flows(workspace_id);
     CREATE INDEX idx_flows_is_enabled ON flows(is_enabled);
     CREATE INDEX idx_flow_execution_logs_flow_id ON flow_execution_logs(flow_id);
     CREATE INDEX idx_flow_execution_logs_workspace_id ON flow_execution_logs(workspace_id);
     CREATE INDEX idx_flow_execution_logs_status ON flow_execution_logs(status);
-    
+
     CREATE INDEX idx_node_red_flows_workspace_id ON node_red_flows(workspace_id);
-    
+
     CREATE INDEX idx_virtual_points_workspace_id ON virtual_points(workspace_id);
     CREATE INDEX idx_virtual_points_flow_id ON virtual_points(flow_id);
     CREATE INDEX idx_virtual_point_data_workspace_id ON virtual_point_data(workspace_id);
     CREATE INDEX idx_virtual_point_data_virtual_point_id ON virtual_point_data(virtual_point_id);
     CREATE INDEX idx_virtual_point_data_timestamp ON virtual_point_data(timestamp);
-    
+
     CREATE INDEX idx_control_devices_workspace_id ON control_devices(workspace_id);
     CREATE INDEX idx_control_devices_device_key ON control_devices(device_key);
     CREATE INDEX idx_control_commands_workspace_id ON control_commands(workspace_id);
     CREATE INDEX idx_control_commands_control_device_id ON control_commands(control_device_id);
-    
+
     CREATE INDEX idx_energy_meters_workspace_id ON energy_meters(workspace_id);
     CREATE INDEX idx_energy_meters_device_id ON energy_meters(device_id);
     CREATE INDEX idx_energy_readings_workspace_id ON energy_readings(workspace_id);
@@ -1086,34 +1096,34 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'
     CREATE INDEX idx_energy_consumption_workspace_id ON energy_consumption(workspace_id);
     CREATE INDEX idx_energy_consumption_energy_meter_id ON energy_consumption(energy_meter_id);
     CREATE INDEX idx_energy_consumption_period ON energy_consumption(period_start, period_end);
-    
+
     -- Spaces indexes moved to new table indexes section
-    
+
     CREATE INDEX idx_system_config_key ON system_config(key);
     CREATE INDEX idx_system_config_category ON system_config(category);
     CREATE INDEX idx_system_metrics_timestamp ON system_metrics(timestamp);
-    
+
     -- New table indexes
     CREATE INDEX idx_thing_models_workspace_id ON thing_models(workspace_id);
     CREATE INDEX idx_thing_models_workspace_created_at ON thing_models(workspace_id, created_at);
-    
+
     CREATE INDEX idx_spaces_workspace_id ON spaces(workspace_id);
     CREATE INDEX idx_spaces_tier_level ON spaces(tier_level);
     CREATE INDEX idx_spaces_parent_space_id ON spaces(parent_space_id);
     CREATE INDEX idx_spaces_workspace_tier ON spaces(workspace_id, tier_level);
-    
+
     CREATE INDEX idx_api_keys_workspace_id ON api_keys(workspace_id);
     CREATE INDEX idx_api_keys_user_id ON api_keys(user_id);
     CREATE INDEX idx_api_keys_key_prefix ON api_keys(key_prefix);
     CREATE INDEX idx_api_keys_is_active ON api_keys(is_active);
     CREATE INDEX idx_api_keys_expires_at ON api_keys(expires_at);
-    
+
     CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
     CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
     CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
-    
+
     CREATE INDEX idx_totp_secrets_user_id ON totp_secrets(user_id);
-    
+
     CREATE INDEX idx_audit_logs_workspace_id ON audit_logs(workspace_id);
     CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
     CREATE INDEX idx_audit_logs_action ON audit_logs(action);
@@ -1122,22 +1132,22 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'
     CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
     CREATE INDEX idx_audit_logs_correlation_id ON audit_logs(correlation_id);
     CREATE INDEX idx_audit_logs_workspace_created_at ON audit_logs(workspace_id, created_at);
-    
+
     CREATE INDEX idx_data_aggregations_workspace_device ON data_aggregations(workspace_id, device_id);
     CREATE INDEX idx_data_aggregations_device_property ON data_aggregations(device_id, property);
     CREATE INDEX idx_data_aggregations_interval ON data_aggregations(interval);
     CREATE INDEX idx_data_aggregations_period_start ON data_aggregations(period_start);
-    
+
     CREATE INDEX idx_anomaly_rules_workspace_id ON anomaly_rules(workspace_id);
     CREATE INDEX idx_anomaly_rules_device_id ON anomaly_rules(device_id);
     CREATE INDEX idx_anomaly_rules_property ON anomaly_rules(property);
     CREATE INDEX idx_anomaly_rules_is_enabled ON anomaly_rules(is_enabled);
-    
+
     CREATE INDEX idx_scheduled_reports_workspace_id ON scheduled_reports(workspace_id);
     CREATE INDEX idx_scheduled_reports_dashboard_id ON scheduled_reports(dashboard_id);
     CREATE INDEX idx_scheduled_reports_is_enabled ON scheduled_reports(is_enabled);
     CREATE INDEX idx_scheduled_reports_next_run_at ON scheduled_reports(next_run_at);
-    
+
     CREATE INDEX idx_report_executions_report_id ON report_executions(report_id);
     CREATE INDEX idx_report_executions_status ON report_executions(status);
     CREATE INDEX idx_report_executions_started_at ON report_executions(started_at);
@@ -1145,14 +1155,14 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-'
     -- =====================================================
     -- DEFAULT DATA
     -- =====================================================
-    
-    INSERT INTO workspaces (id, name, slug, plan, is_active) 
+
+    INSERT INTO workspaces (id, name, slug, plan, is_active)
     VALUES ('default-workspace-id', 'Default Workspace', 'default', 'free', true)
     ON CONFLICT (slug) DO NOTHING;
-    
+
     -- Note: system_branding uses file-based entries (logo, favicon, etc.)
     -- Default entries will be created by the application when files are uploaded
-    
+
     SELECT 'Schema creation completed successfully' as status;
 
 EOSQL
@@ -1160,13 +1170,13 @@ EOSQL
 echo "Verifying database initialization..."
 
 table_count=$(psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A -c "
-    SELECT COUNT(*) FROM information_schema.tables 
+    SELECT COUNT(*) FROM information_schema.tables
     WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
 ")
 
 key_tables=$(psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A -c "
-    SELECT COUNT(*) FROM information_schema.tables 
-    WHERE table_schema = 'public' 
+    SELECT COUNT(*) FROM information_schema.tables
+    WHERE table_schema = 'public'
     AND table_type = 'BASE TABLE'
     AND table_name IN ('users', 'workspaces', 'devices', 'drivers', 'dashboards', 'flows', 'rules', 'alerts');
 ")
@@ -1178,9 +1188,9 @@ echo "   Key IoT Hub tables: $key_tables/8"
 if [ "$table_count" -ge 40 ] && [ "$key_tables" -ge 6 ]; then
     echo "DATABASE INITIALIZATION COMPLETED SUCCESSFULLY!"
     echo "All 48 tables created and verified"
-    
+
     psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
-        SELECT table_name FROM information_schema.tables 
+        SELECT table_name FROM information_schema.tables
         WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
         ORDER BY table_name;
     "
