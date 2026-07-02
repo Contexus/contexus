@@ -41,7 +41,7 @@ services:
       start_period: 30s
   # --- IoT Hub Application ---
   contexus:
-    image: contexus/contexus:latest
+    image: contexusio/contexus:latest
     container_name: contexus-app
     restart: unless-stopped
     depends_on:
