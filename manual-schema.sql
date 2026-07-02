@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     storage_limit INTEGER DEFAULT 1073741824,
     theme JSONB DEFAULT '{}',
     settings JSONB DEFAULT '{}',
+    chirpstack_config JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     updated_at TIMESTAMPTZ
@@ -664,16 +665,15 @@ CREATE INDEX IF NOT EXISTS idx_alerts_workspace_id ON alerts(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_energy_meters_workspace_id ON energy_meters(workspace_id);
 
 -- DEFAULT DATA
-INSERT INTO workspaces (id, name, slug, plan, is_active) 
+INSERT INTO workspaces (id, name, slug, plan, is_active)
 VALUES ('default-workspace-id', 'Default Workspace', 'default', 'free', true)
 ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO system_branding (id, site_title) 
+INSERT INTO system_branding (id, site_title)
 VALUES ('default-branding-id', 'Contexus - Smart IoT Platform')
 ON CONFLICT DO NOTHING;
 
 -- Verification
-SELECT 'Schema creation completed' as status, COUNT(*) as table_count 
-FROM information_schema.tables 
+SELECT 'Schema creation completed' as status, COUNT(*) as table_count
+FROM information_schema.tables
 WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
-
